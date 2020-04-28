@@ -24,8 +24,17 @@ fs.readdir('poster', (err) => {
 
 const crawler = async () => {
   try {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({ 
+      // headless: process.env.NODE_ENV === 'production'
+      headless: false,
+      args: ['--window-size=1920,1080'] // 브라우저 전체 창 키우기
+    });
     const page = await browser.newPage();
+    // 페이지 영역 키우기
+    await page.setViewport({
+      width: 1920,
+      height: 1080,
+    })
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36')
     add_to_sheet(ws, 'C1', 's', '평점');
     for (const [i, r] of records.entries()) {
@@ -52,6 +61,26 @@ const crawler = async () => {
       // 이미지를 받아올 때 arraybuffer로 받아옴
       // * buffer가 연속적으로 들어있는 자료 구조가 arraybuffer이다.
       if (result.img) {
+        // 스크린샷 찍기, 두번째 인자로 fullPage 속성도 넣을 수 있다.
+        /*
+          path 속성     -> 스크린샷 저장 경로 지정가능.
+          fullPage 속성 -> 페이지 전체 스크린샷 저장가능.
+          clip 속성     -> 스크린샷 찍고 싶은 영역 직접 지정가능.
+        */
+        const buffer = await page.screenshot({ 
+          path: `screenshot/${r.제목}.png`, 
+          fullPage: false,
+          clip: {
+            x: 100,
+            y: 100,
+            width: 300,
+            height: 300,
+          }
+        });
+        /*  # 아래 방법으로도 저장 가능하다.
+            const buffer = await page.screenshot();
+            fs.writeFileSync('screenshot/', buffer); 
+        */
         // [정규표현식] ?.+$에서 .은 모든단어, +는 한 개 이상, $는 끝을 의미한다.
         const imgResult = await axios.get(result.img.replace(/\?.*$/, ''), {
           responseType: 'arraybuffer',
