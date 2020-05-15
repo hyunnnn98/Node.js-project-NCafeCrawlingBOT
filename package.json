@@ -1,15 +1,17 @@
 {
-  "name": "xlsx-puppeteer-multipage",
+  "name": "naver_cafe_bot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node index"
   },
-  "author": "ZeroCho",
+  "author": "SEUNGHYUN CHO",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.19.2",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "puppeteer": "^1.12.2",
     "xlsx": "^0.14.1"
   }
