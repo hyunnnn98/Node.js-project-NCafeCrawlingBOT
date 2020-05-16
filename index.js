@@ -4,7 +4,8 @@ dotenv.config();
 
 const crawler = async (now_hour) => {
   try {
-    const browser = await puppeteer.launch({ headless: true, args: ['--window-size=1920,1080'] });
+    console.log('크롤링을 시작합니다!');
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
 
     const page = await browser.newPage();
     await page.setViewport({
@@ -200,8 +201,9 @@ const crawler = async (now_hour) => {
       return response.url().includes('ca-fe/');
     });
 
-    await page_naver.goto('https://m.cafe.naver.com/hyun9803');
-    // https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567
+    await page_naver.goto('https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567');
+    // await page_naver.goto('https://m.cafe.naver.com/hyun9803');
+
     await page_naver.waitForSelector('button.btn_write');
 
     
@@ -210,79 +212,11 @@ const crawler = async (now_hour) => {
     });
     
     await page_naver.waitForSelector('#menuid_list');
-    await page_naver.evaluate(() => {
-              // 내 마우스 위치 잘 보이게 하는 CSS 적용 함수.
-              (() => {
-                const box = document.createElement('div');
-                box.classList.add('mouse-helper');
-                const styleElement = document.createElement('style');
-                styleElement.innerHTML = `
-                  .mouse-helper {
-                    pointer-events: none;
-                    position: absolute;
-                    z-index: 100000;
-                    top: 0;
-                    left: 0;
-                    width: 20px;
-                    height: 20px;
-                    background: rgba(0,0,0,.4);
-                    border: 1px solid white;
-                    border-radius: 10px;
-                    margin-left: -10px;
-                    margin-top: -10px;
-                    transition: background .2s, border-radius .2s, border-color .2s;
-                  }
-                  .mouse-helper.button-1 {
-                    transition: none;
-                    background: rgba(0,0,0,0.9);
-                  }
-                  .mouse-helper.button-2 {
-                    transition: none;
-                    border-color: rgba(0,0,255,0.9);
-                  }
-                  .mouse-helper.button-3 {
-                    transition: none;
-                    border-radius: 4px;
-                  }
-                  .mouse-helper.button-4 {
-                    transition: none;
-                    border-color: rgba(255,0,0,0.9);
-                  }
-                  .mouse-helper.button-5 {
-                    transition: none;
-                    border-color: rgba(0,255,0,0.9);
-                  }
-                  `;
-                document.head.appendChild(styleElement);
-                document.body.appendChild(box);
-                document.addEventListener('mousemove', event => {
-                  box.style.left = event.pageX + 'px';
-                  box.style.top = event.pageY + 'px';
-                  updateButtons(event.buttons);
-                }, true);
-                document.addEventListener('mousedown', event => {
-                  updateButtons(event.buttons);
-                  box.classList.add('button-' + event.which);
-                }, true);
-                document.addEventListener('mouseup', event => {
-                  updateButtons(event.buttons);
-                  box.classList.remove('button-' + event.which);
-                }, true);
-                function updateButtons(buttons) {
-                  for (let i = 0; i < 5; i++)
-                    box.classList.toggle('button-' + i, !!(buttons & (1 << i)));
-                }
-              })();
-    });
 
-    await page_naver.mouse.move(150, 90);
-    await page_naver.mouse.click(150, 90);
-    await page_naver.keyboard.press('ArrowDown');
-    await page_naver.keyboard.press('Enter');
-
-    await page_naver.waitFor(1000);
+    await page_naver.waitFor(2000);
 
     console.log(now_hour);
+    if (now_hour == 24) now_hour = 0;
     // 타이틀 입력.
     await page_naver.evaluate(({ now_hour }) => {
       console.log(now_hour);
@@ -327,9 +261,11 @@ const crawler = async (now_hour) => {
       document.querySelector('.btns_right a:nth-child(2)').click();
     });
 
+    console.log('크롤링을 종료합니다!');
     await page_naver.close();
     await browser.close();
   } catch (e) {
+    console.log('예상치 못한 오류로 종료합니다!', e);
   }
 };
 
@@ -337,7 +273,7 @@ let hour = new Date().getHours();
 const schedule = require('node-schedule');
 
 const rule = new schedule.RecurrenceRule();
-rule.minute = 05;
+rule.minute = 59;
 
 const work = schedule.scheduleJob(rule, () => {
   console.log('노드 스케쥴러 작동합니다!')
