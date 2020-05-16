@@ -2,9 +2,9 @@ const puppeteer = require('puppeteer');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const crawler = async () => {
+const crawler = async (now_hour) => {
   try {
-    const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
+    const browser = await puppeteer.launch({ headless: true, args: ['--window-size=1920,1080'] });
 
     const page = await browser.newPage();
     await page.setViewport({
@@ -21,7 +21,7 @@ const crawler = async () => {
     let result      = [];
     let viewRank    = [];
     let commentRank = [];
-
+    
     try {
       // 1시간 단위로 크롤링 -> 종료
       while (true) {
@@ -32,18 +32,28 @@ const crawler = async () => {
           const HOUR = new Date().getHours();
           // console.log('현재시간 :', HOUR);
           let Tags = [];
-
+          // URL 쿼리 파싱 정규식표현
+          let url_regular_Expressions     = /(articleid\=)([\/0-9-%#]*)(&boardtype)/g;
+          // let post_regular_Expressions = /[[^](.*)\]/;
+          
           const li_Tags = document.querySelectorAll('.list_area .board_box');
           if (li_Tags.length) {
 
-            li_Tags.forEach((v) => {
+            li_Tags.forEach(async (v) => {
               // 조회수 split로 한글 날리기
-              let view = v.querySelector('.user_area .no').innerText.split(' ');
-              let time = v.querySelector('.user_area .time').innerText;
+              let view          = v.querySelector('.user_area .no').innerText.split(' ');
+              let time          = await v.querySelector('.user_area .time').innerText;
+              let title         = v.querySelector('.txt_area .tit').innerText;
+              let queryParsing  = await url_regular_Expressions.exec(v.querySelector('.txt_area').href);
+              let link          = 'https://cafe.naver.com/wtac/' + queryParsing[2];
+              // let titleParsing  = await post_regular_Expressions.exec(title);
+              let titleParsing  = await title.indexOf("[완료]");
+
+              // if (titleParsing != null) return ;
 
               let post = {
-                link: v.querySelector('.txt_area').href,
-                title: v.querySelector('.txt_area .tit').innerText,
+                link,
+                title,
                 time: time,
                 view: view[1],
                 commentCount: v.querySelector('.comment_inner .num').innerText,
@@ -62,7 +72,7 @@ const crawler = async () => {
                 // 완료된 li태그 제거
                 v.parentElement.removeChild(v);
                 // 게시글이 정상적으로 채워졌을 시 배열 푸쉬.
-                if (post.title) Tags.push(post);
+                if (post.title && titleParsing == -1 ) Tags.push(post);
               }
             });
           }
@@ -191,8 +201,8 @@ const crawler = async () => {
     });
 
     await page_naver.goto('https://m.cafe.naver.com/hyun9803');
-
-    await page_naver.waitForSelector('.list_area');
+    // https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567
+    await page_naver.waitForSelector('button.btn_write');
 
     
     await page_naver.evaluate(() => {
@@ -272,10 +282,12 @@ const crawler = async () => {
 
     await page_naver.waitFor(1000);
 
+    console.log(now_hour);
     // 타이틀 입력.
-    await page_naver.evaluate(() => {
-      document.querySelector('#subject').value = new Date();
-    });
+    await page_naver.evaluate(({ now_hour }) => {
+      console.log(now_hour);
+      document.querySelector('#subject').value = (now_hour + 1) + ":00 - TOP 인기글 스마일 봇 - v1.0";
+    }, { now_hour });
 
     // iframe 안으로 이동.
     await page_naver.waitForSelector('iframe');
@@ -285,25 +297,29 @@ const crawler = async () => {
     );
     const frame = await elementHandle.contentFrame();
 
-    let viewTxt = "<p>■■■ TOP 조회 게시글 ■■■</p><br/>";
+    let notice =
+     `<p><strong>시범 서비스</strong> 운영중입니다. 아래 링크의 <strong>게시글 선택사항 조사</strong>에 참여해주세요!</p>
+     <p>(현재 인기글 리스트는 거래게시글 중 [완료]를 제외한 모든 게시글이 대상입니다)</p>
+     <a href="https://cafe.naver.com/wtac/2769652">[바로가기] 게시글 선택사항 조사</a><br/><br/>`;
+
+    let viewTxt = "<p>■■■ TOP 조회 게시글 ■■■</p>";
     for (let item in viewRank) {
       viewTxt += `<p>${viewRank[item].view} view │ <strong>${viewRank[item].title}</strong></p>`;
       viewTxt += `<a href="${viewRank[item].link}"  title="${viewRank[item].title}">${viewRank[item].link}</a><br/>`;
     }
 
-    let commentTxt = "<p>■■■ TOP 댓글 게시글 ■■■</p><br/>";
+    let commentTxt = "<p>■■■ TOP 댓글 게시글 ■■■</p>";
     for (let item in commentRank) {
       commentTxt += `<p>[${commentRank[item].commentCount}]개 │ <strong>${commentRank[item].title}</strong></p>`;
       commentTxt += `<a href="${commentRank[item].link}"  title="${commentRank[item].title}"/>${commentRank[item].link}</a><br/>`;
     }
-
     
     // 함수내에 매개변수를 지정해준다.
-    await frame.evaluate(({ viewTxt, commentTxt }) => {
+    await frame.evaluate(({ notice, viewTxt, commentTxt }) => {
       console.log('viewRank!', viewTxt);
       console.log('commentRank!', commentTxt);
-      document.querySelector('#body').innerHTML = viewTxt + "<br/><br/>" + commentTxt;
-    }, { viewTxt, commentTxt });
+      document.querySelector('#body').innerHTML = notice + viewTxt + "<br/><br/>" + commentTxt;
+    }, { notice, viewTxt, commentTxt });
 
 
     await page_naver.waitFor(3000);
@@ -316,4 +332,15 @@ const crawler = async () => {
   } catch (e) {
   }
 };
-crawler();
+
+let hour = new Date().getHours();
+const schedule = require('node-schedule');
+
+const rule = new schedule.RecurrenceRule();
+rule.minute = 05;
+
+const work = schedule.scheduleJob(rule, () => {
+  console.log('노드 스케쥴러 작동합니다!')
+  crawler(hour);
+});
+
