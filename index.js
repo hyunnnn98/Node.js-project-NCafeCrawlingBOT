@@ -81,7 +81,7 @@ const crawler = async () => {
             // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
             let post_hour = await time.split(':')[0];
 
-            if (END_HOUR > post_hour || post_hour == 23) {
+            if (END_HOUR > post_hour || post_hour == 23 || post_hour == time) {
               console.log('** 타임 아웃 **');
               if (typeof (Tags.slice(-1)[0]) == "object") Tags.push("loop_end")
             } else if (post.title && titleParsing == -1) {
@@ -101,7 +101,7 @@ const crawler = async () => {
       }, END_HOUR);
 
       // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
-      let is_end_of_loop = typeof(data.slice(-1)[0]) == "string";
+      let is_end_of_loop = typeof (data.slice(-1)[0]) == "string";
       console.log(data.slice(-1)[0])
 
       if (is_end_of_loop) {
@@ -140,7 +140,7 @@ const crawler = async () => {
     // -->>
 
     // <<-- 네이버 카페 글작성 로직 실행
-    await write_process(page_naver, NOW_HOUR, viewRank, commentRank);
+    await write_process(browser, page_naver, NOW_HOUR, viewRank, commentRank);
     // -->>
 
     // <<-- 크롤링 종료와 동시에 브라우저 종료
