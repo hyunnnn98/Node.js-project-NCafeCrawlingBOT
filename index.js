@@ -1,11 +1,20 @@
+/* Utils */
+const login_process = require('./Utils/n_login');
+const write_process = require('./Utils/n_write');
+const sorting_process = require('./Utils/n_sorting');
+
 const puppeteer = require('puppeteer');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const crawler = async (now_hour) => {
+const crawler = async () => {
   try {
     console.log('크롤링을 시작합니다!');
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const NOW_HOUR = new Date().getHours();
+    const END_HOUR = NOW_HOUR - 2;
+
+    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
 
     const page = await browser.newPage();
     await page.setViewport({
@@ -19,264 +28,138 @@ const crawler = async (now_hour) => {
     await page.waitForSelector('.list_area');
 
     // 크롤링된 데이터 담을 변수
-    let result      = [];
-    let viewRank    = [];
+    let result = [];
+    let viewRank = [];
     let commentRank = [];
-    
-    try {
-      // 1시간 단위로 크롤링 -> 종료
-      while (true) {
-        console.log('무한 반복문 시작입니다!');
-        // 새로운 페이지 크롤링 시작
-        const data = await page.evaluate(() => {
-          // 현재 시간 불러오기
-          const HOUR = new Date().getHours();
-          // console.log('현재시간 :', HOUR);
-          let Tags = [];
-          // URL 쿼리 파싱 정규식표현
-          let url_regular_Expressions     = /(articleid\=)([\/0-9-%#]*)(&boardtype)/g;
-          // let post_regular_Expressions = /[[^](.*)\]/;
-          
-          const li_Tags = document.querySelectorAll('.list_area .board_box');
-          if (li_Tags.length) {
+    let is_possible_parse = true;
 
-            li_Tags.forEach(async (v) => {
-              // 조회수 split로 한글 날리기
-              let view          = v.querySelector('.user_area .no').innerText.split(' ');
-              let time          = await v.querySelector('.user_area .time').innerText;
-              let title         = v.querySelector('.txt_area .tit').innerText;
-              let queryParsing  = await url_regular_Expressions.exec(v.querySelector('.txt_area').href);
-              let link          = 'https://cafe.naver.com/wtac/' + queryParsing[2];
-              // let titleParsing  = await post_regular_Expressions.exec(title);
-              let titleParsing  = await title.indexOf("[완료]");
+    // <<-- 크롤링 시작
+    while (is_possible_parse) {
+      // <<-- 페이지 완벽한 이동 검사
+      await page.waitForSelector('.board_box');
+      console.log('** 페이지 로딩 완료 **');
+      // -->>
 
-              // if (titleParsing != null) return ;
+      console.log(is_possible_parse + " : test value")
+      // 새로운 페이지 크롤링 시작
+      const data = await page.evaluate((END_HOUR) => {
+        /**
+         * 업데이트 1시간 단위 크롤링 기준 -> +2 시간으로 변경.
+         */
+        let Tags = [];
+        // URL 쿼리 파싱 정규식표현
+        let url_regular_Expressions = /(articleid\=)([\/0-9-%#]*)(&boardtype)/g;
+        // let post_regular_Expressions = /[[^](.*)\]/;
 
-              let post = {
-                link,
-                title,
-                time: time,
-                view: view[1],
-                commentCount: v.querySelector('.comment_inner .num').innerText,
-              }
+        const li_Tags = document.querySelectorAll('.list_area .board_box');
+        const IS_POST_EXISTS = li_Tags.length;
 
-              let checkHour = time.split(':');
-              // console.log(checkHour)
-              // console.log(HOUR)
+        if (IS_POST_EXISTS) {
+          li_Tags.forEach(async (v) => {
+            // 조회수 split로 한글 날리기
+            let queryParsing = url_regular_Expressions.exec(v.querySelector('.txt_area').href);
+            let link = 'https://cafe.naver.com/wtac/' + queryParsing[2];
+            let title = v.querySelector('.txt_area .tit').innerText;
+            let time = await v.querySelector('.user_area .time').innerText;
+            let view = v.querySelector('.user_area .no').innerText.split(' ')[1];
+            let titleParsing = await title.indexOf("[완료]");
 
-              if (HOUR != checkHour[0]) {
-                if (post.title) Tags.push(post);
-                console.log('시간이 틀렸습니다!!');
-                return Tags;
-              } else {
-                console.log('li태그 삭제.')
-                // 완료된 li태그 제거
-                v.parentElement.removeChild(v);
-                // 게시글이 정상적으로 채워졌을 시 배열 푸쉬.
-                if (post.title && titleParsing == -1 ) Tags.push(post);
-              }
-            });
-          }
-          console.log('이제 리턴 타임임!');
-          return Tags;
-        });
+            let post = {
+              link,
+              title,
+              time,
+              view,
+              commentCount: v.querySelector('.comment_inner .num').innerText,
+            }
 
-        // 뽑아온 데이터 순차로 저장
-        result = result.concat(data);
+            // 변수를 생각해야할게 뭐냐면.. 3시간씩 돈다고 하면..
+            // 23시 -> 2 -> 5 -> 8 -> 11 -> 14 -> 17 -> 20 -> 23
+            // 2시일때가 문제이군..
+            // why?
+            // 2시면 2시 1시 0시?
 
-        let itemTime = result.slice(-1)[0].time.split(':');
-        console.log(itemTime)
-        let nowTime = new Date().getHours();
-        console.log(nowTime)
-        if (nowTime != itemTime[0]) {
-          throw "TIMEOUT"
+            // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
+            let post_hour = await time.split(':')[0];
+
+            if (END_HOUR > post_hour || post_hour == 23) {
+              console.log('** 타임 아웃 **');
+              if (typeof (Tags.slice(-1)[0]) == "object") Tags.push("loop_end")
+            } else if (post.title && titleParsing == -1) {
+              // 게시글이 정상적으로 채워졌을 시 배열 푸쉬.
+              Tags.push(post);
+            }
+            // -->>
+
+            // 완료된 li태그 제거
+            console.log('** 다음 게시글 이동 **');
+            v.parentElement.removeChild(v);
+          });
         }
 
-        // 한 페이지 태그 다 뽑아 왔으면 3초간 쉬어주고 다음페이지 이동.
-        await page.waitFor(1000);
-        await page.evaluate(() => {
-          document.querySelector('.u_cbox_btn_more').click();
-        });
+        console.log('** 게시글 크롤링 종료 **');
+        return Tags;
+      }, END_HOUR);
 
-        // 새 페이지 이동 후 -> 새로운 li 태그들 로딩 대기
-        await page.waitForSelector('.board_box');
-        console.log('다음페이지로 넘어갑니다.');
-      }
-    } catch (err) {
-      console.log('받은 에러', err);
-      // console.log('전체 결과', result);
-      if (err == "TIMEOUT") {
-        /* 조회수 순으로 정렬 */
-        let sortingField = "view";
-        let topViewList = result.sort(function (a, b) {
-          return b[sortingField] - a[sortingField];
-        });
-        viewRank = topViewList.slice(0, 5);
-        console.log('조회수 순으로 정렬', viewRank);
+      // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
+      let is_end_of_loop = typeof(data.slice(-1)[0]) == "string";
+      console.log(data.slice(-1)[0])
 
-        /* 댓글 순으로 정렬 */
-        sortingField = "commentCount";
-        let topCommentList = result.sort(function (a, b) {
-          return b[sortingField] - a[sortingField];
-        });
-        commentRank = topCommentList.slice(0, 5);
-        console.log('댓글 순으로 정렬', commentRank);
+      if (is_end_of_loop) {
+        is_possible_parse = false;
+        data.splice(-1);
+        console.log(data.slice(-1)[0])
       }
+      // -->>
+
+      // 뽑아온 데이터 순차로 저장
+      result = result.concat(data);
+
+      // <<-- 다음페이지 이동.
+      await page.waitFor(1000);
+      await page.evaluate(() => {
+        document.querySelector('.u_cbox_btn_more').click();
+      });
+      // -->>
     }
-
     await page.close();
+    // -->>
 
-    // 네이버 로그인 시작
-    const page_temp = await browser.newPage();
-    await page_temp.setViewport({
-      width: 1080,
-      height: 1080
-    })
+    /* 조회수 순으로 정렬 */
+    sortingField = "view";
+    viewRank = sorting_process(sortingField, result, 5);
+    console.log('조회수 순으로 정렬', viewRank);
 
+    /* 댓글 순으로 정렬 */
+    sortingField = "commentCount";
+    commentRank = sorting_process(sortingField, result, 5);
+    console.log('댓글 순으로 정렬', commentRank);
+
+    // <<-- 네이버 로그인 로직 실행
     const page_naver = await browser.newPage();
-    await page_naver.setViewport({
-      width: 1080,
-      height: 1080,
-    })
+    await login_process(browser, page_naver);
+    // -->>
 
-    await page_temp.goto('https://m.naver.com');
-    await page_naver.goto('https://m.cafe.naver.com/ca-fe');
+    // <<-- 네이버 카페 글작성 로직 실행
+    await write_process(page_naver, NOW_HOUR, viewRank, commentRank);
+    // -->>
 
-
-    // 모바일 네이버 접속 -> 네이버 카페 페이지 불러올때까지 대기
-    await page_naver.waitForSelector('.btn_cafe');
-    await page_naver.waitFor(1000);
-
-    // 로그인 버튼 클릭하기
-    await page_naver.evaluate(() => {
-      document.querySelector('.btn_cafe').click();
-    });
-
-    // 로그인 페이지 불러올떄까지 대기
-    await page_naver.waitForSelector('#id');
-
-    await page_temp.mouse.move(300, 200);
-    await page_temp.mouse.click(300, 200);
-    await page_temp.type('#query', process.env.ID);
-    await page_temp.keyboard.down('Control');
-    await page_temp.keyboard.press('KeyA');
-    await page_temp.keyboard.up('Control');
-    await page_temp.keyboard.down('Control');
-    await page_temp.keyboard.press('KeyX');
-    await page_temp.keyboard.up('Control');
-    await page_temp.waitFor(1000);
-
-    await page_naver.mouse.move(100, 470);
-    await page_naver.waitFor(2000);
-    await page_naver.mouse.click(100, 470);
-    await page_naver.waitFor(1000);
-
-    await page_naver.keyboard.down('Control');
-    await page_naver.keyboard.press('KeyV');
-    await page_naver.keyboard.up('Control');
-    await page_naver.waitFor(10000);
-
-    await page_temp.type('#query', process.env.PASSWORD);
-    await page_temp.keyboard.down('Control');
-    await page_temp.keyboard.press('KeyA');
-    await page_temp.keyboard.up('Control');
-    await page_temp.keyboard.down('Control');
-    await page_temp.keyboard.press('KeyX');
-    await page_temp.keyboard.up('Control');
-    await page_temp.waitFor(5000);
-    await page_temp.close();
-
-    await page_naver.keyboard.press('Tab');
-    await page_naver.waitFor(1000);
-
-    await page_naver.keyboard.down('Control');
-    await page_naver.keyboard.press('KeyV');
-    await page_naver.keyboard.up('Control');
-    await page_naver.waitFor(5000);
-
-    await page_naver.evaluate(() => {
-      document.querySelector('.btn_login > .btn_global').click();
-    });
-    await page_naver.waitForResponse((response) => {
-      return response.url().includes('ca-fe/');
-    });
-
-    await page_naver.goto('https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567');
-    // await page_naver.goto('https://m.cafe.naver.com/hyun9803');
-
-    await page_naver.waitForSelector('button.btn_write');
-
-    
-    await page_naver.evaluate(() => {
-      document.querySelector('button.btn_write').click();
-    });
-    
-    await page_naver.waitForSelector('#menuid_list');
-
-    await page_naver.waitFor(2000);
-
-    console.log(now_hour);
-    if (now_hour == 24) now_hour = 0;
-    // 타이틀 입력.
-    await page_naver.evaluate(({ now_hour }) => {
-      console.log(now_hour);
-      document.querySelector('#subject').value = (now_hour + 1) + ":00 - TOP 인기글 스마일 봇 - v1.0";
-    }, { now_hour });
-
-    // iframe 안으로 이동.
-    await page_naver.waitForSelector('iframe');
-
-    const elementHandle = await page_naver.$(
-      'iframe[src="/SmartEditor2Inputarea.nhn"]',
-    );
-    const frame = await elementHandle.contentFrame();
-
-    let notice =
-     `<p><strong>시범 서비스</strong> 운영중입니다. 아래 링크의 <strong>게시글 선택사항 조사</strong>에 참여해주세요!</p>
-     <p>(현재 인기글 리스트는 거래게시글 중 [완료]를 제외한 모든 게시글이 대상입니다)</p>
-     <a href="https://cafe.naver.com/wtac/2769652">[바로가기] 게시글 선택사항 조사</a><br/><br/>`;
-
-    let viewTxt = "<p>■■■ TOP 조회 게시글 ■■■</p>";
-    for (let item in viewRank) {
-      viewTxt += `<p>${viewRank[item].view} view │ <strong>${viewRank[item].title}</strong></p>`;
-      viewTxt += `<a href="${viewRank[item].link}"  title="${viewRank[item].title}">${viewRank[item].link}</a><br/>`;
-    }
-
-    let commentTxt = "<p>■■■ TOP 댓글 게시글 ■■■</p>";
-    for (let item in commentRank) {
-      commentTxt += `<p>[${commentRank[item].commentCount}]개 │ <strong>${commentRank[item].title}</strong></p>`;
-      commentTxt += `<a href="${commentRank[item].link}"  title="${commentRank[item].title}"/>${commentRank[item].link}</a><br/>`;
-    }
-    
-    // 함수내에 매개변수를 지정해준다.
-    await frame.evaluate(({ notice, viewTxt, commentTxt }) => {
-      console.log('viewRank!', viewTxt);
-      console.log('commentRank!', commentTxt);
-      document.querySelector('#body').innerHTML = notice + viewTxt + "<br/><br/>" + commentTxt;
-    }, { notice, viewTxt, commentTxt });
-
-
-    await page_naver.waitFor(3000);
-    await page_naver.evaluate(() => {
-      document.querySelector('.btns_right a:nth-child(2)').click();
-    });
-
+    // <<-- 크롤링 종료와 동시에 브라우저 종료
     console.log('크롤링을 종료합니다!');
     await page_naver.close();
     await browser.close();
+    // -->>
+
   } catch (e) {
     console.log('예상치 못한 오류로 종료합니다!', e);
   }
 };
+// const schedule = require('node-schedule');
 
-let hour = new Date().getHours();
-const schedule = require('node-schedule');
+// const rule = new schedule.RecurrenceRule();
+// rule.minute = 8;
 
-const rule = new schedule.RecurrenceRule();
-rule.minute = 59;
+// const work = schedule.scheduleJob(rule, () => {
+//   console.log('노드 스케쥴러 작동합니다!')
+// });
 
-const work = schedule.scheduleJob(rule, () => {
-  console.log('노드 스케쥴러 작동합니다!')
-  crawler(hour);
-});
-
+crawler();
