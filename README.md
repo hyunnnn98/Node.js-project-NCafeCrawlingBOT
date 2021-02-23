@@ -2,9 +2,10 @@
 
 > 
 > ### 홍보 팜플렛<br/>
-> [![cafe_info](image/cafe_info.png)](https://cafe.naver.com/wtac) &nbsp;&nbsp;&nbsp;
+> 유저수 19만명의 2020년 네이버 인기 카페 동물의 숲 인기글 크롤러 봇 입니다.<br/><br/>
+> [![cafe_info](image/cafe_info.png)](https://cafe.naver.com/wtac?iframe_url=/ArticleList.nhn%3Fsearch.clubid=15092639%26search.menuid=567) &nbsp;&nbsp;&nbsp;
 ><img width="500" alt="bot_screen" src="image/bot_screen.png">
-<br/>[Smile Bot 운영 페이지 바로가기](https://cafe.naver.com/wtac)
+<br/>[Smile Bot 운영 페이지 바로가기](https://cafe.naver.com/wtac?iframe_url=/ArticleList.nhn%3Fsearch.clubid=15092639%26search.menuid=567)
 
 > ### 크롤링 결과<br/>
 ><img width="500" alt="result_page" src="image/result_page.png">
