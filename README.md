@@ -2,12 +2,12 @@
 
 > 
 > ### 홍보 팜플렛<br/>
-> [![Vue](../네이버%20크롤링_hyunnnn98/image/cafe_info.png)](https://cafe.naver.com/wtac) &nbsp;&nbsp;&nbsp;
-><img width="500" alt="bot_screen" src="../네이버%20크롤링_hyunnnn98/image/bot_screen.png">
+> [![cafe_info](image/cafe_info.png)](https://cafe.naver.com/wtac) &nbsp;&nbsp;&nbsp;
+><img width="500" alt="bot_screen" src="image/bot_screen.png">
 <br/>[Smile Bot 운영 페이지 바로가기](https://cafe.naver.com/wtac)
 
 > ### 크롤링 결과<br/>
-><img width="500" alt="bot_screen" src="../네이버%20크롤링_hyunnnn98/image/../../네이버%20크롤링_hyunnnn98/image/result_page.png">
+><img width="500" alt="result_page" src="image/result_page.png">
 ><br/>
 
 
