@@ -12,11 +12,18 @@ const crawler = async () => {
     console.log('크롤링을 시작합니다!');
     const NOW_HOUR = new Date().getHours();
     const END_HOUR = NOW_HOUR - 2;
+    console.log(`시작시간 : ${NOW_HOUR}, 종료시간 : ${END_HOUR}`)
 
-    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
 
+    // init browser
+    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+
     const page = await browser.newPage();
+
+    // page setting
+    const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
+    await page.setUserAgent(USER_AGENT)
     await page.setViewport({
       width: 1080,
       height: 1080,
@@ -40,7 +47,6 @@ const crawler = async () => {
       console.log('** 페이지 로딩 완료 **');
       // -->>
 
-      console.log(is_possible_parse + " : test value")
       // 새로운 페이지 크롤링 시작
       const data = await page.evaluate((END_HOUR) => {
         /**
@@ -48,21 +54,23 @@ const crawler = async () => {
          */
         let Tags = [];
         // URL 쿼리 파싱 정규식표현
-        let url_regular_Expressions = /(articleid\=)([\/0-9-%#]*)(&boardtype)/g;
-        // let post_regular_Expressions = /[[^](.*)\]/;
+        const URI_REGULAR_EXPRESSION = /(articleid\=)([\/0-9-%#]*)(&boardtype)/g;
 
         const li_Tags = document.querySelectorAll('.list_area .board_box');
-        const IS_POST_EXISTS = li_Tags.length;
+        const IS_POSTS_EXIST = li_Tags && li_Tags.length !== 0;
 
-        if (IS_POST_EXISTS) {
+        if (IS_POSTS_EXIST) {
           li_Tags.forEach(async (v) => {
             // 조회수 split로 한글 날리기
-            let queryParsing = url_regular_Expressions.exec(v.querySelector('.txt_area').href);
+            let queryParsing = URI_REGULAR_EXPRESSION.exec(v.querySelector('.txt_area').href);
             let link = 'https://cafe.naver.com/wtac/' + queryParsing[2];
             let title = v.querySelector('.txt_area .tit').innerText;
             let time = await v.querySelector('.user_area .time').innerText;
             let view = v.querySelector('.user_area .no').innerText.split(' ')[1];
             let titleParsing = await title.indexOf("[완료]");
+            let sellStringParsing = await title.indexOf("[모동숲 사요]");
+            let buyStringParsing = await title.indexOf("[모동숲 팔아요]");
+            let tradeStringParsing = await title.indexOf("[모동숲 교환]");
 
             let post = {
               link,
@@ -81,10 +89,10 @@ const crawler = async () => {
             // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
             let post_hour = await time.split(':')[0];
 
-            if (END_HOUR > post_hour || post_hour == 23 || post_hour == time) {
+            if (END_HOUR > post_hour || post_hour == 23) {
               console.log('** 타임 아웃 **');
               if (typeof (Tags.slice(-1)[0]) == "object") Tags.push("loop_end")
-            } else if (post.title && titleParsing == -1) {
+            } else if (post.title && (titleParsing === -1 && sellStringParsing === -1 && buyStringParsing === -1 && tradeStringParsing === - 1)) {
               // 게시글이 정상적으로 채워졌을 시 배열 푸쉬.
               Tags.push(post);
             }
@@ -115,7 +123,6 @@ const crawler = async () => {
       result = result.concat(data);
 
       // <<-- 다음페이지 이동.
-      await page.waitFor(1000);
       await page.evaluate(() => {
         document.querySelector('.u_cbox_btn_more').click();
       });
@@ -145,21 +152,21 @@ const crawler = async () => {
 
     // <<-- 크롤링 종료와 동시에 브라우저 종료
     console.log('크롤링을 종료합니다!');
-    await page_naver.close();
-    await browser.close();
+    // await page_naver.close();
+    // await browser.close();
     // -->>
 
   } catch (e) {
     console.log('예상치 못한 오류로 종료합니다!', e);
   }
 };
-// const schedule = require('node-schedule');
+const schedule = require('node-schedule');
 
-// const rule = new schedule.RecurrenceRule();
-// rule.minute = 8;
+const rule = new schedule.RecurrenceRule();
+rule.minute = 8;
 
-// const work = schedule.scheduleJob(rule, () => {
-//   console.log('노드 스케쥴러 작동합니다!')
-// });
+const work = schedule.scheduleJob(rule, () => {
+  console.log('노드 스케쥴러 작동합니다!')
+});
 
 crawler();
