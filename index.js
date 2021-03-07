@@ -80,12 +80,6 @@ const crawler = async () => {
               commentCount: v.querySelector('.comment_inner .num').innerText,
             }
 
-            // 변수를 생각해야할게 뭐냐면.. 3시간씩 돈다고 하면..
-            // 23시 -> 2 -> 5 -> 8 -> 11 -> 14 -> 17 -> 20 -> 23
-            // 2시일때가 문제이군..
-            // why?
-            // 2시면 2시 1시 0시?
-
             // << --타임아웃 체크 (게시글 파싱 종료 시간일 경우 반복문 탈출 )
             let post_hour = await time.split(':')[0];
 
@@ -144,10 +138,13 @@ const crawler = async () => {
     // <<-- 네이버 로그인 로직 실행
     const page_naver = await browser.newPage();
     await login_process(browser, page_naver);
+    // await page_naver.close();
     // -->>
 
     // <<-- 네이버 카페 글작성 로직 실행
+    // const write_naver = await browser.newPage();
     await write_process(browser, page_naver, NOW_HOUR, viewRank, commentRank);
+    // await write_naver.close();
     // -->>
 
     // <<-- 크롤링 종료와 동시에 브라우저 종료

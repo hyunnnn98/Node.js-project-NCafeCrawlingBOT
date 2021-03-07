@@ -3,7 +3,7 @@ const write_process = async (browser, page_naver, now_hour, viewRank, commentRan
     await page_naver.waitForResponse((response) => {
         return response.url().includes('ca-fe/');
     });
-
+    console.log(`로그인 완료!! 현재 시간은 ${now_hour}`)
     await page_naver.goto('https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567');
 
     await page_naver.waitForSelector('button.btn_write');
@@ -81,9 +81,9 @@ const write_process = async (browser, page_naver, now_hour, viewRank, commentRan
     await page_naver.waitFor(2000);
     // -->>
 
-    await page_naver.evaluate(() => {
-        document.querySelector('.ArticleWriteComplete a:nth-child(2)').click();
-    });
+    // await page_naver.evaluate(() => {
+    //     document.querySelector('.ArticleWriteComplete a:nth-child(2)').click();
+    // });
     // await page_naver.waitFor(3000);
 }
 
