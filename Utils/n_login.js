@@ -66,11 +66,15 @@ const login_process = async (browser, login_page) => {
     await login_page.keyboard.down('Control');
     await login_page.keyboard.press('KeyV');
     await login_page.keyboard.up('Control');
-    await login_page.waitFor(3000);
+    await login_page.waitFor(2000);
+    await login_page.keyboard.press('Tab');
+    await login_page.keyboard.press('Enter');
 
-    await login_page.evaluate(() => {
-        document.querySelector('.btn_global').click();
+    await login_page.waitForResponse((response) => {
+        console.log('res', response.url());
+        return response.url().includes('ca-fe/');
     });
+    console.log(`로그인 완료!!`)
 }
 
 module.exports = login_process;

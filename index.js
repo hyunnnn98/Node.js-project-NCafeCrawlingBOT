@@ -14,10 +14,10 @@ const crawler = async () => {
     const END_HOUR = NOW_HOUR - 2;
     console.log(`시작시간 : ${NOW_HOUR}, 종료시간 : ${END_HOUR}`)
 
-    const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
+    // const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
 
     // init browser
-    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
 
     const page = await browser.newPage();
 
@@ -137,14 +137,12 @@ const crawler = async () => {
 
     // <<-- 네이버 로그인 로직 실행
     const page_naver = await browser.newPage();
+    page_naver.setDefaultNavigationTimeout(60000);
     await login_process(browser, page_naver);
-    // await page_naver.close();
     // -->>
 
     // <<-- 네이버 카페 글작성 로직 실행
-    // const write_naver = await browser.newPage();
     await write_process(browser, page_naver, NOW_HOUR, viewRank, commentRank);
-    // await write_naver.close();
     // -->>
 
     // <<-- 크롤링 종료와 동시에 브라우저 종료

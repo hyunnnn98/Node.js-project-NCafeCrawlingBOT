@@ -1,9 +1,5 @@
 const write_process = async (browser, page_naver, now_hour, viewRank, commentRank) => {
-    console.log(now_hour, viewRank, commentRank)
-    await page_naver.waitForResponse((response) => {
-        return response.url().includes('ca-fe/');
-    });
-    console.log(`로그인 완료!! 현재 시간은 ${now_hour}`)
+    console.log(`현재 시간은 ${now_hour} 입니다. 스마일 봇 메인 페이지로 이동합니다...`)
     await page_naver.goto('https://m.cafe.naver.com/ca-fe/web/cafes/15092639/menus/567');
 
     await page_naver.waitForSelector('button.btn_write');
