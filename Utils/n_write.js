@@ -66,7 +66,11 @@ const write_process = async (browser, page_naver, now_hour, viewRank, commentRan
     await temp_page.keyboard.down('Control');
     await temp_page.keyboard.press('KeyX');
     await temp_page.keyboard.up('Control');
+    await temp_page.close();
+    // -------- temp page close --------
+    // -->>
 
+    // <<-- 글 작성 폼 이동
     for (let i = 0; i < 13; i++) {
         await page_naver.keyboard.press('Tab');
     }
@@ -74,13 +78,25 @@ const write_process = async (browser, page_naver, now_hour, viewRank, commentRan
     await page_naver.keyboard.down('Control');
     await page_naver.keyboard.press('KeyV');
     await page_naver.keyboard.up('Control');
-    await page_naver.waitFor(2000);
     // -->>
 
-    // await page_naver.evaluate(() => {
-    //     document.querySelector('.ArticleWriteComplete a:nth-child(2)').click();
-    // });
-    // await page_naver.waitFor(3000);
+    // <-- 게시글 공개 처리 후 글 작성 완료
+    await page_naver.evaluate(() => {
+        document.querySelector('.btn_set').click();
+    });
+
+    await page_naver.waitFor(2000);
+
+    await page_naver.evaluate(() => {
+        document.querySelector('#optionOpenEntire').click();
+    });
+
+    await page_naver.waitFor(1000);
+
+    await page_naver.evaluate(() => {
+        document.querySelector('.ArticleWriteComplete a:nth-child(2)').click();
+    });
+    // -->>
 }
 
 module.exports = write_process;

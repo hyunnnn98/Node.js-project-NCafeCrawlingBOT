@@ -11,13 +11,13 @@ const crawler = async () => {
   try {
     console.log('크롤링을 시작합니다!');
     const NOW_HOUR = new Date().getHours();
-    const END_HOUR = NOW_HOUR - 2;
+    const END_HOUR = NOW_HOUR - 8;
     console.log(`시작시간 : ${NOW_HOUR}, 종료시간 : ${END_HOUR}`)
 
-    // const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1920,1080'] });
+    const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1080,1080'] });
 
     // init browser
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
 
     const page = await browser.newPage();
 
@@ -67,10 +67,11 @@ const crawler = async () => {
             let title = v.querySelector('.txt_area .tit').innerText;
             let time = await v.querySelector('.user_area .time').innerText;
             let view = v.querySelector('.user_area .no').innerText.split(' ')[1];
-            let titleParsing = await title.indexOf("[완료]");
-            let sellStringParsing = await title.indexOf("[모동숲 사요]");
-            let buyStringParsing = await title.indexOf("[모동숲 팔아요]");
-            let tradeStringParsing = await title.indexOf("[모동숲 교환]");
+            const titleParsing = await title.indexOf("[완료]");
+            const sellStringParsing = await title.indexOf("[모동숲 사요]");
+            const buyStringParsing = await title.indexOf("[모동숲 팔아요]");
+            const tradeStringParsing = await title.indexOf("[모동숲 교환]");
+            const multiStringParsing = await title.indexOf("사고팜");
 
             let post = {
               link,
@@ -86,7 +87,7 @@ const crawler = async () => {
             if (END_HOUR > post_hour || post_hour == 23) {
               console.log('** 타임 아웃 **');
               if (typeof (Tags.slice(-1)[0]) == "object") Tags.push("loop_end")
-            } else if (post.title && (titleParsing === -1 && sellStringParsing === -1 && buyStringParsing === -1 && tradeStringParsing === - 1)) {
+            } else if (post.title && (titleParsing === -1 && sellStringParsing === -1 && buyStringParsing === -1 && tradeStringParsing === - 1 && multiStringParsing === - 1)) {
               // 게시글이 정상적으로 채워졌을 시 배열 푸쉬.
               Tags.push(post);
             }
@@ -158,10 +159,12 @@ const crawler = async () => {
 const schedule = require('node-schedule');
 
 const rule = new schedule.RecurrenceRule();
-rule.minute = 8;
+rule.hour = new schedule.Range(0, 23, 3);
+rule.minute = 59;
 
 const work = schedule.scheduleJob(rule, () => {
   console.log('노드 스케쥴러 작동합니다!')
 });
 
 crawler();
+
