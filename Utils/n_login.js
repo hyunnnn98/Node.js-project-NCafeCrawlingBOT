@@ -10,6 +10,7 @@ const login_process = async (browser, login_page) => {
     //     height: 1080
     // })
 
+    // <<-- version.2.0.3 패치 ( 간락한 로그인 ) 
     await login_page.setViewport({
         width: 1080,
         height: 1080,
@@ -22,6 +23,7 @@ const login_process = async (browser, login_page) => {
     }, process.env.ID, process.env.PASSWORD);
     await login_page.click('.btn_global');
     await login_page.waitForNavigation();
+    // -->>
 
     // await temp_page.goto('https://m.naver.com');
     // await login_page.goto('https://m.cafe.naver.com/ca-fe');

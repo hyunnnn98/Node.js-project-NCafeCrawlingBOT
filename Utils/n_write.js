@@ -14,7 +14,7 @@ const write_process = async (browser, page_naver, now_hour, viewRank, commentRan
 
     let start_time = await now_hour - 2;
     let end_time = await now_hour;
-    let title = `${start_time}:00 ~ ${end_time}:00 - TOP 인기글 스마일 봇 - v2.0.2`;
+    let title = `${start_time}:00 ~ ${end_time}:00 - TOP 인기글 스마일 봇 - v2.0.3`;
 
     await page_naver.type('.ArticleWriteFormSubject textarea', title);
     await page_naver.mouse.click(100, 100);

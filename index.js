@@ -14,10 +14,10 @@ const crawler = async () => {
     const END_HOUR = NOW_HOUR - 8;
     console.log(`시작시간 : ${NOW_HOUR}, 종료시간 : ${END_HOUR}`)
 
-    const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1080,1080'] });
+    // const browser = await puppeteer.launch({ headless: false, args: ['--window-size=1100,1080'] });
 
     // init browser
-    // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
 
     const page = await browser.newPage();
 
@@ -148,8 +148,8 @@ const crawler = async () => {
 
     // <<-- 크롤링 종료와 동시에 브라우저 종료
     console.log('크롤링을 종료합니다!');
-    // await page_naver.close();
-    // await browser.close();
+    await page_naver.close();
+    await browser.close();
     // -->>
 
   } catch (e) {
@@ -162,9 +162,9 @@ const rule = new schedule.RecurrenceRule();
 rule.hour = new schedule.Range(0, 23, 3);
 rule.minute = 59;
 
-const work = schedule.scheduleJob(rule, () => {
+schedule.scheduleJob(rule, () => {
   console.log('노드 스케쥴러 작동합니다!')
+  crawler();
 });
 
-crawler();
 
